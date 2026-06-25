@@ -54,12 +54,12 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if step == "title":
         user_data[user_id]["title"] = text
         user_data[user_id]["step"] = "date"
-        await update.message.reply_text("កាលបរិច្ឆេទធ្វើរបាយការណ៍")
+        await update.message.reply_text("កាលបរិច្ឆេទធ្វើរបាយការណ៍ ចន្ទគតិ និងសុរិយគតិ")
 
     elif step == "date":
         user_data[user_id]["date"] = text
         user_data[user_id]["step"] = "intro"
-        await update.message.reply_text("សូមបំពេញព័ត៌មានទូទៅ")
+        await update.message.reply_text("សូមបំពេញព័ត៌មានទូទៅនៃដំណើរការកិច្ចប្រជុំ កាលបរិច្ឆេទ ទីកន្លែង គណៈអធិបតី អ្នកចូលរួម")
 
     elif step == "intro":
         user_data[user_id]["intro"] = text
