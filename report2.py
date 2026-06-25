@@ -184,5 +184,25 @@ app.add_handler(CommandHandler("report", report))
 app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
 print("✅ Bot is running...")
+
+# ===== Flask for Render FREE =====
+from flask import Flask
+import threading
+
+app_web = Flask(__name__)
+
+@app_web.route("/")
+def home():
+    return "Bot is running ✅"
+
+def run_web():
+    app_web.run(host="0.0.0.0", port=10000)
+
+# ✅ Start Flask first
+threading.Thread(target=run_web).start()
+
+# ✅ Then start bot
+print("✅ Bot is running...")
 app.run_polling()
+
 
