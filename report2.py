@@ -12,6 +12,8 @@ from docx import Document
 from docx.shared import Cm, Pt
 from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_LINE_SPACING
 
+import os
+
 # =============================
 # Store user data
 # =============================
@@ -32,7 +34,6 @@ async def report(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.message.from_user.id
     user_data[user_id] = {"step": "title"}
 
-    # ✅ Instruction (Telegram only)
     await update.message.reply_text(
         "សូមបំពេញចំណងជើងរបាយការណ៍\n"
         "ឧទាហរណ៍៖ របាយការណ៍ស្តីពី… នៅថ្ងៃទី…"
@@ -50,22 +51,15 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     step = user_data[user_id]["step"]
 
-    # -------- TELEGRAM FLOW --------
-
     if step == "title":
         user_data[user_id]["title"] = text
         user_data[user_id]["step"] = "date"
-        await update.message.reply_text(
-            "កាលបរិច្ឆេទធ្វើរបាយការណ៍ (ចន្ទគតិ និងសុរិយាគតិ)"
-        )
+        await update.message.reply_text("កាលបរិច្ឆេទធ្វើរបាយការណ៍")
 
     elif step == "date":
         user_data[user_id]["date"] = text
         user_data[user_id]["step"] = "intro"
-        await update.message.reply_text(
-            "សូមបំពេញព័ត៌មានទូទៅ "
-            "(ទីកន្លែង កាលបរិច្ឆេទ អធិបតីភាព អ្នកចូលរួម ។ល។)"
-        )
+        await update.message.reply_text("សូមបំពេញព័ត៌មានទូទៅ")
 
     elif step == "intro":
         user_data[user_id]["intro"] = text
@@ -75,32 +69,30 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif step == "agenda":
         user_data[user_id]["agenda"] = text
         user_data[user_id]["step"] = "result"
-        await update.message.reply_text("ក្រោយពីពិភាក្សា តើទទួលបានលទ្ធផលអ្វីខ្លះ?")
+        await update.message.reply_text("លទ្ធផល")
 
     elif step == "result":
         user_data[user_id]["result"] = text
         user_data[user_id]["step"] = "note"
-        await update.message.reply_text("សូមផ្តល់ការកត់សម្គាល់ ឬមតិរបស់អ្នក")
+        await update.message.reply_text("កំណត់សម្គាល់")
 
     elif step == "note":
         user_data[user_id]["note"] = text
         user_data[user_id]["step"] = "summary"
-        await update.message.reply_text("សូមផ្តល់ការសន្និដ្ឋាន")
+        await update.message.reply_text("សន្និដ្ឋាន")
 
     elif step == "summary":
         user_data[user_id]["summary"] = text
         user_data[user_id]["step"] = "name"
         await update.message.reply_text("ឈ្មោះអ្នកធ្វើរបាយការណ៍")
 
-    # -------- FINAL STEP: CREATE WORD --------
-
     elif step == "name":
         user_data[user_id]["name"] = text
 
+        # Create Word document
         doc = Document()
         section = doc.sections[0]
 
-        # Page setup (A4)
         section.page_height = Cm(29.7)
         section.page_width = Cm(21)
         section.top_margin = Cm(1.5)
@@ -108,7 +100,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         section.left_margin = Cm(2.2)
         section.right_margin = Cm(1.5)
 
-        # ---------- Styles ----------
+        # Styles
         def body(p):
             p.paragraph_format.space_before = Pt(6)
             p.paragraph_format.space_after = Pt(0)
@@ -125,7 +117,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 r.font.name = "Khmer OS Muol Light"
                 r.font.size = Pt(12)
 
-        # ---------- Header ----------
+        # Header
         p = doc.add_paragraph("ព្រះរាជាណាចក្រកម្ពុជា")
         p.alignment = WD_ALIGN_PARAGRAPH.CENTER
         p.runs[0].bold = True
@@ -153,7 +145,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         p.runs[0].bold = True
         body(p)
 
-        # Content (NO instruction text)
+        # Content
         for k in ["intro", "agenda", "result", "note", "summary"]:
             body(doc.add_paragraph(user_data[user_id][k]))
 
@@ -175,8 +167,10 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         user_data.pop(user_id)
 
 # =============================
-# Run bot
+# TELEGRAM BOT INIT
 # =============================
+TOKEN = os.environ.get("BOT_TOKEN")
+
 app = ApplicationBuilder().token("8503397726:AAHHL2QsPPSmo3cevdNsSies1M80wBDRChw").build()
 
 app.add_handler(CommandHandler("start", start))
@@ -185,7 +179,9 @@ app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
 print("✅ Bot is running...")
 
-# ===== Flask for Render FREE =====
+# =============================
+# FLASK SERVER FOR RENDER
+# =============================
 from flask import Flask
 import threading
 
@@ -198,11 +194,6 @@ def home():
 def run_web():
     app_web.run(host="0.0.0.0", port=10000)
 
-# ✅ Start Flask first
 threading.Thread(target=run_web).start()
 
-# ✅ Then start bot
-print("✅ Bot is running...")
 app.run_polling()
-
-
